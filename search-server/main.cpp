@@ -48,11 +48,11 @@ vector<string> SplitIntoWords(const string& text) {
     return words;
 }
 string MinusWordWithoutMinus (const string& word) {
-        bool IsMinus=false;
-        string str=""s;
+        bool IsMinus = false;
+        string str = ""s;
         for(char  c : word){
-            if(c!='-'){
-                str+=c;
+            if(c != '-'){
+                str += c;
             }else{
                 IsMinus=true;
             }    
@@ -64,12 +64,10 @@ string MinusWordWithoutMinus (const string& word) {
         }
     }
 bool IsMinusWord(const string& word){
-    if(word[0]=='-'){
-        
-        return true;
-    }else{
-        return false;
-    }
+    return word[0] == '-';
+}
+double CalculateIDF(int  document_count,int  document_count_with_word){
+    return log(document_count / (0.0 + document_count_with_word));
 }
 
 struct Document {
@@ -90,19 +88,14 @@ public:
     void AddDocument(int document_id, const string& document) {
         vector<string> words = SplitIntoWordsNoStop(document);
         ++document_count_;
-        double k=1/(0.0+words.size());
-        //cout<<"size "<<size<<endl;
+        double k = 1.0 / words.size();
         for(string & word : words){
            if(word_to_document_freqs_[word].count(document_id)>0){
-                //word_to_document_freqs_[word][document_id]=(word_to_document_freqs_[word][document_id]*size+1)/size;
-                word_to_document_freqs_[word][document_id]=word_to_document_freqs_[word][document_id]+k;
-                //cout<<word_to_document_freqs_[word][document_id]<<endl;
+                word_to_document_freqs_[word][document_id] += k;
             }else{
                 word_to_document_freqs_[word].insert({document_id,k});
-                //cout<<word_to_document_freqs_[word][document_id]<<endl;
             }
         }
-        //cout<<endl;
     }
 
     vector<Document> FindTopDocuments(const string& raw_query) const {
@@ -143,16 +136,11 @@ private:
 
     Query ParseQuery(const string& text) const {
         Query result;
-        string str;
         for (const string& word : SplitIntoWordsNoStop(text)) {
-            
-            //cout<<word<<" ";
             if(!IsMinusWord(word)){
                 result.query_words_.insert(word);
-                //cout<<word<<" / ";
             }else{
                 result.query_minus_words_.insert(word.substr(1,word.size()-1));
-                //cout<<word.substr(1,word.size()-1)<<" minus ";
             }
         }
         return result;
@@ -160,20 +148,16 @@ private:
 
     vector<Document> FindAllDocuments(const Query & query_words) const {
         map<int, double> matched_documents;
-        double idf=0.0;
+        double idf = 0.0;
         for(const string & qw : query_words.query_words_){
-            if(word_to_document_freqs_.count(qw)>0){
-                idf=log(document_count_/(0.0+word_to_document_freqs_.at(qw).size()));
-                //cout<<"idf "<<idf<<endl;
+            if(word_to_document_freqs_.count(qw) > 0){
+                idf = CalculateIDF(document_count_,word_to_document_freqs_.at(qw).size());
                 for (const auto& [id, tf] : word_to_document_freqs_.at(qw)){
-                    if(matched_documents.contains(id)>0){
-                        //cout<<tf<<" ";
-                        matched_documents[id]+=idf*tf;
-                        //cout<<matched_documents[id]<<" ";
+                    if(matched_documents.contains(id) > 0){
+                        matched_documents[id] += idf*tf;
                     }else{
-                        matched_documents[id]=idf*tf;
+                        matched_documents[id] = idf*tf;
                     }
-                    //cout<<endl;
                 }
             }
         }
@@ -188,10 +172,8 @@ private:
         for (const auto& [id, relav] : matched_documents){
             result.push_back({id,relav});
         }
-        
         return result;
     }
-    
 };
 
 SearchServer CreateSearchServer() {
@@ -202,7 +184,6 @@ SearchServer CreateSearchServer() {
     for (int document_id = 0; document_id < document_count; ++document_id) {
         search_server.AddDocument(document_id, ReadLine());
     }
-
     return search_server;
 }
 
