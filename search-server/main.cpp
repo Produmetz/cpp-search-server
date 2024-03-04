@@ -10,10 +10,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double EPSILON = 1e-6; 
 
 string ReadLine() {
     string s;
@@ -79,13 +81,13 @@ public:
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
     
-    vector<Document> FindTopDocuments(const string& raw_query,  bool (* func_predict )(int document_id, DocumentStatus status, int rating)  ) const {
+    vector<Document> FindTopDocuments(const string& raw_query,  auto function ) const {
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query);
 
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                 if (abs(lhs.relevance - rhs.relevance) < EPSILON /*к слову изначально у меня тут и была эпсилон, но мне потом дали код без эпсилон*/) {
                      return lhs.rating > rhs.rating;
                  } else {
                      return lhs.relevance > rhs.relevance;
@@ -94,7 +96,7 @@ public:
         
         vector<Document> intermediate_matched_documents;
         for( auto &&document : matched_documents){
-            if(func_predict(document.id, documents_.at(document.id).status, documents_.at(document.id).rating)){
+            if(function(document.id, documents_.at(document.id).status, documents_.at(document.id).rating)){
                intermediate_matched_documents.push_back(document);
             }
         }
@@ -110,38 +112,10 @@ public:
             return (status == DocumentStatus::ACTUAL);
         });
     }
-    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus  needed_status) const {
-    /*  А как-то так нельзя было сделать или даже надо было? Или с этим вопросом тред с практикой ?
-    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus  needed_status) const {
-        return FindTopDocuments(raw_query, [&needed_status](int document_id, DocumentStatus status, int rating){
+    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus   needed_status) const {
+        return FindTopDocuments(raw_query, [needed_status](int document_id, DocumentStatus status, int rating){
             return (status == needed_status);
         });
-    }
-    */
-        const Query query = ParseQuery(raw_query);
-        auto matched_documents = FindAllDocuments(query);
-
-        sort(matched_documents.begin(), matched_documents.end(),
-             [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6 ) {
-                     return lhs.rating > rhs.rating;
-                 } else {
-                     return lhs.relevance > rhs.relevance;
-                 }
-             });
-        vector<Document> intermediate_matched_documents;
-        for(auto &&document : matched_documents){
-           
-            if(documents_.at(document.id).status == needed_status){
-                intermediate_matched_documents.push_back(document);
-            }
-        }
-        matched_documents.swap(intermediate_matched_documents);
-        intermediate_matched_documents.clear();
-        if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
-            matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
-        }
-        return matched_documents;
     }
 
     int GetDocumentCount() const {
@@ -200,10 +174,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
