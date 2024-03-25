@@ -31,6 +31,12 @@ int ReadLineWithNumber() {
     ReadLine();
     return result;
 }
+static bool IsValidWord(const string& word) {
+    // A valid word must not contain special characters
+    return none_of(word.begin(), word.end(), [](char c) {
+        return c >= '\0' && c < ' ';
+    });
+}
 
 vector<string> SplitIntoWords(const string& text) {
     vector<string> words;
@@ -39,6 +45,9 @@ vector<string> SplitIntoWords(const string& text) {
         if (c == ' ') {
             if (!word.empty()) {
                 words.push_back(word);
+                if(!IsValidWord(word)){
+                    throw invalid_argument("special symbol, word : "s + word);
+                }
                 word.clear();
             }
         } else {
@@ -46,6 +55,9 @@ vector<string> SplitIntoWords(const string& text) {
         }
     }
     if (!word.empty()) {
+        if(!IsValidWord(word)){
+            throw invalid_argument("special symbol, word : "s + word);
+        }
         words.push_back(word);
     }
 
@@ -110,16 +122,17 @@ public:
     
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                                    const vector<int>& ratings) {
-        if((document_id < 0) || (documents_.count(document_id) > 0)){
-            throw invalid_argument("Id < 0 or this id was added"s);
+        if(document_id < 0){
+            throw invalid_argument("Id < 0 "s);
         }
+        if(documents_.count(document_id) > 0){
+            throw invalid_argument("this id was added"s);
+        }
+        
         const vector<string> words = SplitIntoWordsNoStop(document);
 
-        for (const string& word : words) {
-            if(!IsValidWord(word)){
-                throw invalid_argument("Document with special symbol"s);
-            }
-        }
+        ordered_id_.push_back(document_id);
+
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
@@ -187,16 +200,10 @@ public:
     }
 
     int GetDocumentId(int index) const {
-        int result;
-        if((0 <= index)&&(index < GetDocumentCount())){
-            documents_.begin();
-            auto iter =  next(documents_.begin(), index) ;
-            auto el = *iter;
-            result = el.first; 
-        }else{
-            throw out_of_range("Id out of correct range"s); 
+        if((index < 0) || (ordered_id_.size() < index)){
+            throw out_of_range("index out of correct range"s); 
         }
-        return result;
+        return ordered_id_[index];
     }
 
 private:
@@ -207,16 +214,10 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
+    vector<int> ordered_id_;
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
-    }
-
-    static bool IsValidWord(const string& word) {
-        // A valid word must not contain special characters
-        return none_of(word.begin(), word.end(), [](char c) {
-            return c >= '\0' && c < ' ';
-        });
     }
     static bool IsWordWithDoubleMinus(const string& word) {
         for(int i = 0; i < static_cast<int>(word.size()) - 1; ++i){
@@ -256,17 +257,14 @@ private:
         if(!IsValidWord(text)){
             throw invalid_argument("Query with special symbol"s);
         }
-        if((text[0] == '-')){
-            if((text.size() == 1) || (text[1] == '-') || (text[text.size() - 1] == '-')){
-                throw invalid_argument("Incorrect use minus in query"s);
-            }else{
-                is_minus = true;
-                text = text.substr(1);
-            }
-        }else if(IsWordWithDoubleMinus(text) || (text[text.size() - 1] == '-')){
+        if(IsWordWithDoubleMinus(text) || (text[text.size() - 1] == '-'))
+        //text[text.size() - 1] == '-' исключает случай "cat- "
+        {
             throw invalid_argument("Incorrect use minus in query"s);
+        }else if(text[0] == '-'){
+            is_minus = true;
+            text = text.substr(1);
         }
-
         
         return {text, is_minus, IsStopWord(text)};
     }
