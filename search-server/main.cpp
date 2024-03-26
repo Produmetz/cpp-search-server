@@ -1,7 +1,3 @@
-// Решите загадку: Сколько чисел от 1 до 1000 содержат как минимум одну цифру 3?
-// Напишите ответ здесь:
-
-// Закомитьте изменения и отправьте их в свой репозиторий.
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -113,11 +109,7 @@ public:
         : SearchServer(
             SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
     {
-        for(const auto &word : stop_words_){
-            if(!IsValidWord(word)){
-                throw invalid_argument("Stop words with special symbol"s);
-            }
-        }
+        
     }
     
     void AddDocument(int document_id, const string& document, DocumentStatus status,
@@ -200,10 +192,8 @@ public:
     }
 
     int GetDocumentId(int index) const {
-        if((index < 0) || (ordered_id_.size() < index)){
-            throw out_of_range("index out of correct range"s); 
-        }
-        return ordered_id_[index];
+        //хотел использовать at, но подумал, что тогда не знаю как передать сообщение с ошибкой какое-нибудь
+        return ordered_id_.at(index);
     }
 
 private:
@@ -219,7 +209,9 @@ private:
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
     }
-    static bool IsWordWithDoubleMinus(const string& word) {
+    static bool IsWordWithDoubleMinus(const string& word)
+    // метод используется 
+    {
         for(int i = 0; i < static_cast<int>(word.size()) - 1; ++i){
             if((word.at(i) == '-') && (word.at(i+1) == '-')){
                 return true;
@@ -259,6 +251,13 @@ private:
         }
         if(IsWordWithDoubleMinus(text) || (text[text.size() - 1] == '-'))
         //text[text.size() - 1] == '-' исключает случай "cat- "
+        /*
+            в задании сказано, что минусы разрешены в середине слова,
+            но не сказано про конец. И моё мнение было такого, что
+            что этот случай относиться к пустому минус слову, которое пробелом не отделено,
+            что тоже оишбка в запросе получается
+            Отсутствие текста после символа «минус» в поисковом запросе: пушистый - .
+        */
         {
             throw invalid_argument("Incorrect use minus in query"s);
         }else if(text[0] == '-'){
