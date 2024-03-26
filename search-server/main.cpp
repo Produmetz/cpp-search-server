@@ -192,7 +192,6 @@ public:
     }
 
     int GetDocumentId(int index) const {
-        //хотел использовать at, но подумал, что тогда не знаю как передать сообщение с ошибкой какое-нибудь
         return ordered_id_.at(index);
     }
 
@@ -209,16 +208,7 @@ private:
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
     }
-    static bool IsWordWithDoubleMinus(const string& word)
-    // метод используется 
-    {
-        for(int i = 0; i < static_cast<int>(word.size()) - 1; ++i){
-            if((word.at(i) == '-') && (word.at(i+1) == '-')){
-                return true;
-            }
-        }
-        return false;
-    }
+    
     vector<string> SplitIntoWordsNoStop(const string& text) const {
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
@@ -248,21 +238,13 @@ private:
         // Word shouldn't be empty
         if(!IsValidWord(text)){
             throw invalid_argument("Query with special symbol"s);
-        }
-        if(IsWordWithDoubleMinus(text) || (text[text.size() - 1] == '-'))
-        //text[text.size() - 1] == '-' исключает случай "cat- "
-        /*
-            в задании сказано, что минусы разрешены в середине слова,
-            но не сказано про конец. И моё мнение было такого, что
-            что этот случай относиться к пустому минус слову, которое пробелом не отделено,
-            что тоже оишбка в запросе получается
-            Отсутствие текста после символа «минус» в поисковом запросе: пушистый - .
-        */
-        {
-            throw invalid_argument("Incorrect use minus in query"s);
-        }else if(text[0] == '-'){
+        } 
+        if(text[0] == '-'){
             is_minus = true;
             text = text.substr(1);
+        }
+        if((text[0] == '-') || (text.size() == 0)){
+            throw invalid_argument("Incorrect use minus in query"s);
         }
         
         return {text, is_minus, IsStopWord(text)};
