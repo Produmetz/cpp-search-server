@@ -1,6 +1,5 @@
 #pragma once
 
-inline static constexpr int INVALID_DOCUMENT_ID = -1;
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 const double EPSILON = 1e-6;
 
@@ -23,3 +22,4 @@ enum class DocumentStatus {
     BANNED,
     REMOVED,
 };
+std::ostream& operator<<(std::ostream& out, const Document& document);

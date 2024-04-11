@@ -17,4 +17,3 @@ std::ostream& operator<<(std::ostream& out, const IteratorRange<Iterator>& range
     }
     return out;
 }
-std::ostream& operator<<(std::ostream& out, const Document& document);
