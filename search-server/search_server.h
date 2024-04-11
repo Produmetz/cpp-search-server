@@ -76,7 +76,7 @@ private:
 };
 
 template <typename StringContainer>
-explicit SearchServer::SearchServer(const StringContainer& stop_words)
+SearchServer::SearchServer(const StringContainer& stop_words)
     : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
     for(const auto &word : stop_words_){
         if(!IsValidWord(word)){
