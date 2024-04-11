@@ -29,3 +29,21 @@ private:
     const static int min_in_day_ = 1440;
     const SearchServer & search_server_;
 };
+
+template <typename DocumentPredicate>
+std::vector<Document> RequestQueue::AddFindRequest(const std::string & raw_query, DocumentPredicate document_predicate) {
+    if ( requests_.size() == min_in_day_) {
+        if(requests_.front().count_documents_in_result == 0){
+            --count_no_result_requests_;
+        }
+        requests_.pop_front();
+    }
+    auto results = search_server_.FindTopDocuments(raw_query, document_predicate);      
+    requests_.push_back({raw_query, static_cast<int>(results.size())});
+        
+    if(results.empty()){
+        ++count_no_result_requests_; 
+    }
+        
+    return results;
+}
