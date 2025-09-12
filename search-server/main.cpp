@@ -25,6 +25,6 @@ int main() {
     request_queue.AddFindRequest("big collar"s);
     // первый запрос удален, 1437 запросов с нулевым результатом
     request_queue.AddFindRequest("sparrow"s);
-    //cout << "Total empty requests: "s << request_queue.GetNoResultRequests() << endl;
+    cout << "Total empty requests: "s << request_queue.GetNoResultRequests() << endl;
     return 0;
 }
